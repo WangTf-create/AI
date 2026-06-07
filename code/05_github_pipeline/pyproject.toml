@@ -1,0 +1,25 @@
+# 最小 Python 项目，用来演示「提交后检查」这条 workflow 真跑起来。
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orderkit"
+version = "0.1.0"
+description = "示例项目：演示 GitHub workflow 的 lint + pytest 门禁"
+requires-python = ">=3.10"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "ordering-team" }]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

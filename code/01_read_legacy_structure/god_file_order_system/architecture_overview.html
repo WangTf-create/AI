@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>order_system.py 现状架构图</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #020617;
+      --panel: #0b1220;
+      --panel-border: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --cyan: #22d3ee;
+      --emerald: #34d399;
+      --violet: #a78bfa;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --orange: #fb923c;
+      --slate: #94a3b8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "JetBrains Mono", Consolas, monospace;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.98));
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.05) inset, 0 20px 40px rgba(2, 6, 23, 0.45);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+    .title-wrap { display: flex; align-items: center; gap: 10px; }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7);
+      animation: pulse 1.8s infinite;
+      margin-top: 2px;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .subtitle {
+      margin: 6px 0 0 20px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .toolbar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 6px;
+    }
+    .toolbar-actions {
+      display: none;
+      gap: 6px;
+    }
+    .toolbar.open .toolbar-actions {
+      display: flex;
+    }
+    .toolbar button {
+      cursor: pointer;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #cbd5e1;
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-family: inherit;
+      font-size: 11px;
+    }
+    .toolbar button:hover {
+      border-color: #64748b;
+      color: #e2e8f0;
+    }
+    .toolbar-toggle {
+      width: 30px;
+      padding: 5px 0;
+      font-weight: 700;
+    }
+
+    .diagram-card {
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(2, 6, 23, 0.85);
+      overflow: auto;
+    }
+
+    .summary {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .card {
+      border: 1px solid #23324a;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.65);
+      padding: 10px 12px;
+      min-height: 124px;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+    .card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .card-dot.cyan { background: var(--cyan); }
+    .card-dot.rose { background: var(--rose); }
+    .card-dot.orange { background: var(--orange); }
+    .card h3 {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .card ul {
+      margin: 0;
+      padding-left: 0;
+      list-style: none;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .footer {
+      margin-top: 10px;
+      color: #64748b;
+      font-size: 9px;
+      text-align: right;
+    }
+
+    @media (max-width: 980px) {
+      .summary { grid-template-columns: 1fr; }
+      .header { flex-direction: column; align-items: stretch; }
+    }
+    @media print {
+      .toolbar { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="report-container">
+    <div class="header">
+      <div>
+        <div class="title-wrap">
+          <div class="dot"></div>
+          <h1>`order_system.py` 遗留系统现状架构图</h1>
+        </div>
+        <div class="subtitle">基于 `CODE_INTRO.md`：单文件多子系统、多入口并行、多口径并存、全局可变状态驱动</div>
+      </div>
+      <div class="toolbar" id="toolbar">
+        <div class="toolbar-actions">
+          <button onclick="copyAsImage()">📋 Copy</button>
+          <button onclick="downloadPNG()">🖼️ PNG</button>
+          <button onclick="downloadPDF()">📄 PDF</button>
+        </div>
+        <button class="toolbar-toggle" onclick="toggleToolbar()">⋯</button>
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <svg width="1200" height="820" viewBox="0 0 1200 820" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="order_system 架构图">
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrowhead-risk" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <marker id="arrowhead-msg" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb923c" />
+          </marker>
+        </defs>
+
+        <rect x="0" y="0" width="1200" height="820" fill="#020617"/>
+        <rect x="0" y="0" width="1200" height="820" fill="url(#grid)"/>
+
+        <!-- 连线（先画，置于下层） -->
+        <line x1="90" y1="210" x2="245" y2="210" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="90" y1="320" x2="245" y2="320" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="90" y1="430" x2="245" y2="430" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+
+        <line x1="470" y1="205" x2="570" y2="205" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="470" y1="205" x2="570" y2="285" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="470" y1="205" x2="570" y2="365" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="470" y1="205" x2="570" y2="445" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="470" y1="315" x2="570" y2="365" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+
+        <line x1="785" y1="205" x2="900" y2="205" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="785" y1="285" x2="900" y2="285" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="785" y1="365" x2="900" y2="365" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="785" y1="445" x2="900" y2="445" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+
+        <line x1="450" y1="540" x2="560" y2="620" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <line x1="450" y1="540" x2="790" y2="620" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+
+        <line x1="785" y1="205" x2="570" y2="205" stroke="#fb7185" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrowhead-risk)"/>
+        <line x1="1010" y1="365" x2="570" y2="365" stroke="#fb7185" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrowhead-risk)"/>
+        <line x1="1010" y1="445" x2="570" y2="445" stroke="#fb923c" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrowhead-msg)"/>
+
+        <!-- 区域边框 -->
+        <rect x="20" y="70" width="1160" height="610" rx="12" fill="transparent" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="8,4"/>
+        <text x="38" y="92" fill="#fbbf24" font-size="10">遗留单文件边界：order_system.py（多入口 + 多口径 + 全局可变状态）</text>
+
+        <!-- 左侧入口 -->
+        <rect x="40" y="130" width="170" height="370" rx="8" fill="transparent" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,4"/>
+        <text x="55" y="150" fill="#94a3b8" font-size="10">外部调用入口</text>
+
+        <rect x="50" y="170" width="150" height="80" rx="6" fill="#0f172a"/>
+        <rect x="50" y="170" width="150" height="80" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="125" y="195" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">统一入口族</text>
+        <text x="125" y="212" fill="#94a3b8" font-size="9" text-anchor="middle">dispatch_checkout</text>
+        <text x="125" y="226" fill="#94a3b8" font-size="9" text-anchor="middle">CheckoutFacade.place_order</text>
+
+        <rect x="50" y="280" width="150" height="80" rx="6" fill="#0f172a"/>
+        <rect x="50" y="280" width="150" height="80" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="125" y="305" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">历史入口族</text>
+        <text x="125" y="322" fill="#94a3b8" font-size="9" text-anchor="middle">calc_v0 / v1 / v2</text>
+        <text x="125" y="336" fill="#94a3b8" font-size="9" text-anchor="middle">legacy_* / quick_total</text>
+
+        <rect x="50" y="390" width="150" height="80" rx="6" fill="#0f172a"/>
+        <rect x="50" y="390" width="150" height="80" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="125" y="415" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">替代/报价入口</text>
+        <text x="125" y="432" fill="#94a3b8" font-size="9" text-anchor="middle">RegionalSettlement</text>
+        <text x="125" y="446" fill="#94a3b8" font-size="9" text-anchor="middle">v3_exp / PriceQuoteBuilder</text>
+
+        <!-- 中左核心编排 -->
+        <rect x="245" y="130" width="225" height="170" rx="6" fill="#0f172a"/>
+        <rect x="245" y="130" width="225" height="170" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="357.5" y="154" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">结算主链路（God Core）</text>
+        <text x="357.5" y="171" fill="#94a3b8" font-size="9" text-anchor="middle">OrderSystem.checkout</text>
+        <text x="357.5" y="188" fill="#94a3b8" font-size="8" text-anchor="middle">计价→VIP→券→税→运费→积分</text>
+        <text x="357.5" y="202" fill="#94a3b8" font-size="8" text-anchor="middle">→风控→库存预留→落库→通知</text>
+        <text x="357.5" y="219" fill="#fb7185" font-size="8" text-anchor="middle">可疑：先预留库存再判风控</text>
+        <text x="357.5" y="233" fill="#fb7185" font-size="8" text-anchor="middle">可疑：拒单分支仍可落库</text>
+        <text x="357.5" y="247" fill="#fbbf24" font-size="8" text-anchor="middle">行为依赖 FEATURE_FLAGS 与全局表</text>
+
+        <rect x="245" y="320" width="225" height="140" rx="6" fill="#0f172a"/>
+        <rect x="245" y="320" width="225" height="140" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="357.5" y="344" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">外围编排与批处理</text>
+        <text x="357.5" y="361" fill="#94a3b8" font-size="9" text-anchor="middle">BatchProcessor.run</text>
+        <text x="357.5" y="375" fill="#94a3b8" font-size="9" text-anchor="middle">CheckoutFacade.place_order</text>
+        <text x="357.5" y="392" fill="#94a3b8" font-size="8" text-anchor="middle">校验→结算→支付→路由→通知→小票</text>
+        <text x="357.5" y="409" fill="#fb7185" font-size="8" text-anchor="middle">可疑：payment_failed 状态未入状态机</text>
+
+        <rect x="245" y="480" width="225" height="110" rx="6" fill="#0f172a"/>
+        <rect x="245" y="480" width="225" height="110" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="357.5" y="504" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">多实现对账</text>
+        <text x="357.5" y="521" fill="#94a3b8" font-size="9" text-anchor="middle">SettlementReconciler</text>
+        <text x="357.5" y="538" fill="#94a3b8" font-size="8" text-anchor="middle">同一购物车跑 7 套实现</text>
+        <text x="357.5" y="552" fill="#fb7185" font-size="8" text-anchor="middle">可疑：内部调用 reset_state() 有破坏性</text>
+
+        <!-- 中右子系统块 -->
+        <rect x="570" y="160" width="215" height="90" rx="6" fill="#0f172a"/>
+        <rect x="570" y="160" width="215" height="90" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="677.5" y="184" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">税 / 运费 / 促销</text>
+        <text x="677.5" y="201" fill="#94a3b8" font-size="9" text-anchor="middle">TaxCalculator / ShippingCalculator</text>
+        <text x="677.5" y="215" fill="#94a3b8" font-size="9" text-anchor="middle">PromoEngine</text>
+        <text x="677.5" y="229" fill="#fbbf24" font-size="8" text-anchor="middle">与主 checkout 口径并存</text>
+
+        <rect x="570" y="240" width="215" height="90" rx="6" fill="#0f172a"/>
+        <rect x="570" y="240" width="215" height="90" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="677.5" y="264" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">风控子系统</text>
+        <text x="677.5" y="281" fill="#94a3b8" font-size="9" text-anchor="middle">risk_score / ExtRiskEngine</text>
+        <text x="677.5" y="295" fill="#94a3b8" font-size="8" text-anchor="middle">两套打分维度并存</text>
+        <text x="677.5" y="309" fill="#fb7185" font-size="8" text-anchor="middle">拒单阈值共用 RISK_RULES</text>
+
+        <rect x="570" y="320" width="215" height="90" rx="6" fill="#0f172a"/>
+        <rect x="570" y="320" width="215" height="90" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="677.5" y="344" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">库存 / 仓储</text>
+        <text x="677.5" y="361" fill="#94a3b8" font-size="9" text-anchor="middle">reserve/release / InventoryAdmin</text>
+        <text x="677.5" y="375" fill="#94a3b8" font-size="9" text-anchor="middle">WarehouseRouter / Forecast</text>
+        <text x="677.5" y="389" fill="#fbbf24" font-size="8" text-anchor="middle">总库存与仓库库存分离</text>
+
+        <rect x="570" y="400" width="215" height="90" rx="6" fill="#0f172a"/>
+        <rect x="570" y="400" width="215" height="90" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="677.5" y="424" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">支付 / 通知 / 展示</text>
+        <text x="677.5" y="441" fill="#94a3b8" font-size="9" text-anchor="middle">PaymentSimulator / GiftCardService</text>
+        <text x="677.5" y="455" fill="#94a3b8" font-size="9" text-anchor="middle">notify / NotificationDispatcher</text>
+        <text x="677.5" y="469" fill="#94a3b8" font-size="8" text-anchor="middle">Receipt / Explainer / Enricher</text>
+
+        <!-- 右侧状态与存储 -->
+        <rect x="900" y="130" width="260" height="380" rx="8" fill="transparent" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="4,4"/>
+        <text x="915" y="150" fill="#a78bfa" font-size="10">隐式状态与持久化层</text>
+
+        <rect x="910" y="170" width="240" height="70" rx="6" fill="#0f172a"/>
+        <rect x="910" y="170" width="240" height="70" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="1030" y="193" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">SQLite（8 张表）</text>
+        <text x="1030" y="210" fill="#94a3b8" font-size="8" text-anchor="middle">orders / inventory / reservations / audit</text>
+        <text x="1030" y="224" fill="#94a3b8" font-size="8" text-anchor="middle">events / gift_cards / payments / seq</text>
+
+        <rect x="910" y="250" width="240" height="70" rx="6" fill="#0f172a"/>
+        <rect x="910" y="250" width="240" height="70" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="1030" y="273" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">全局业务态</text>
+        <text x="1030" y="290" fill="#94a3b8" font-size="8" text-anchor="middle">_ORDERS / _INVENTORY / _RESERVATIONS</text>
+        <text x="1030" y="304" fill="#94a3b8" font-size="8" text-anchor="middle">_PAYMENTS / _GIFT_CARDS / _SESSION</text>
+
+        <rect x="910" y="330" width="240" height="70" rx="6" fill="#0f172a"/>
+        <rect x="910" y="330" width="240" height="70" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="1030" y="353" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">配置与开关</text>
+        <text x="1030" y="370" fill="#94a3b8" font-size="8" text-anchor="middle">FEATURE_FLAGS / TAX_TABLE / COUPON_CATALOG</text>
+        <text x="1030" y="384" fill="#fb7185" font-size="8" text-anchor="middle">ConfigManager / CouponIssuer 可动态改写</text>
+
+        <rect x="910" y="410" width="240" height="90" rx="6" fill="#0f172a"/>
+        <rect x="910" y="410" width="240" height="90" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1030" y="433" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">事件 / 审计输出</text>
+        <text x="1030" y="450" fill="#94a3b8" font-size="8" text-anchor="middle">_emit → events（order_* / payment_* / notify）</text>
+        <text x="1030" y="464" fill="#94a3b8" font-size="8" text-anchor="middle">_audit → audit（库存/支付/配置/争议）</text>
+        <text x="1030" y="478" fill="#fbbf24" font-size="8" text-anchor="middle">报表可按订单口径或事件口径取数</text>
+
+        <!-- 底部测试锁定区 -->
+        <rect x="560" y="590" width="590" height="90" rx="6" fill="#0f172a"/>
+        <rect x="560" y="590" width="590" height="90" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="855" y="614" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">特征测试优先锁定面（现状行为）</text>
+        <text x="855" y="631" fill="#94a3b8" font-size="8" text-anchor="middle">入口路由选择 / 7 套实现差异 / 关键分支边界 / 副作用顺序</text>
+        <text x="855" y="645" fill="#94a3b8" font-size="8" text-anchor="middle">库存与预留一致性 / 事件与审计输出 / 全局配置漂移 / 表现层格式兼容</text>
+        <text x="855" y="659" fill="#fb7185" font-size="8" text-anchor="middle">目标是“先锁行为再演进”，不做隐式语义修复</text>
+
+        <!-- 图例（放在边界外） -->
+        <rect x="20" y="710" width="1160" height="90" rx="8" fill="#0b1220" stroke="#1e293b" stroke-width="1"/>
+        <text x="40" y="732" fill="#e2e8f0" font-size="10" font-weight="600">图例</text>
+
+        <rect x="40" y="746" width="14" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.2"/>
+        <text x="62" y="755" fill="#94a3b8" font-size="8">入口 / 门面 / 展示侧</text>
+
+        <rect x="210" y="746" width="14" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.2"/>
+        <text x="232" y="755" fill="#94a3b8" font-size="8">核心业务编排</text>
+
+        <rect x="350" y="746" width="14" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.2"/>
+        <text x="372" y="755" fill="#94a3b8" font-size="8">状态/数据持久化</text>
+
+        <rect x="505" y="746" width="14" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.2"/>
+        <text x="527" y="755" fill="#94a3b8" font-size="8">风控/可疑行为热点</text>
+
+        <line x1="690" y1="751" x2="725" y2="751" stroke="#64748b" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <text x="734" y="755" fill="#94a3b8" font-size="8">调用/数据流</text>
+
+        <line x1="820" y1="751" x2="855" y2="751" stroke="#fb7185" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrowhead-risk)"/>
+        <text x="864" y="755" fill="#94a3b8" font-size="8">口径冲突/风险回流</text>
+
+        <line x1="1000" y1="751" x2="1035" y2="751" stroke="#fb923c" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrowhead-msg)"/>
+        <text x="1044" y="755" fill="#94a3b8" font-size="8">事件/通知输出</text>
+      </svg>
+    </div>
+
+    <div class="summary">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>入口面现状</h3>
+        </div>
+        <ul>
+          <li>• 主路径并非唯一：dispatch/checkout/facade/calc/v3/报价并存</li>
+          <li>• 兼容入口仍暴露，调用方可绕过统一门面</li>
+          <li>• 同一业务目标可能经过不同规则集</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>高风险耦合</h3>
+        </div>
+        <ul>
+          <li>• 全局状态 + 全局配置可变，行为具有跨请求漂移</li>
+          <li>• 税/运费/风控/通知存在多套实现与口径分裂</li>
+          <li>• 状态机非强制主链路，非法状态可进入系统</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot orange"></div>
+          <h3>测试锁定焦点</h3>
+        </div>
+        <ul>
+          <li>• 先锁入口选择、关键边界与副作用顺序</li>
+          <li>• 再锁 7 套实现差异与输出格式兼容</li>
+          <li>• 特别关注库存预留、事件流、配置漂移</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">Source: `code/01_read_legacy_structure/god_file_order_system/CODE_INTRO.md` · Generated: 2026-06-06</div>
+  </div>
+
+  <script>
+    function toggleToolbar() {
+      const toolbar = document.getElementById("toolbar");
+      toolbar.classList.toggle("open");
+    }
+
+    async function captureReportCanvas() {
+      const target = document.getElementById("report-container");
+      const rect = target.getBoundingClientRect();
+      const padding = 32;
+      return window.html2canvas(document.body, {
+        backgroundColor: "#020617",
+        scale: 2,
+        x: rect.left + window.scrollX - padding,
+        y: rect.top + window.scrollY - padding,
+        width: rect.width + padding * 2,
+        height: rect.height + padding * 2,
+        useCORS: true,
+        ignoreElements: (el) => el.classList && el.classList.contains("toolbar")
+      });
+    }
+
+    async function copyAsImage() {
+      try {
+        const canvas = await captureReportCanvas();
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+          alert("已复制 PNG 到剪贴板");
+        }, "image/png");
+      } catch (e) {
+        alert("复制失败: " + (e && e.message ? e.message : e));
+      }
+    }
+
+    async function downloadPNG() {
+      const canvas = await captureReportCanvas();
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = "order_system_architecture.png";
+      a.click();
+    }
+
+    async function downloadPDF() {
+      const canvas = await captureReportCanvas();
+      const img = canvas.toDataURL("image/png");
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [canvas.width, canvas.height] });
+      pdf.addImage(img, "PNG", 0, 0, canvas.width, canvas.height);
+      pdf.save("order_system_architecture.pdf");
+    }
+  </script>
+</body>
+</html>
