@@ -70,12 +70,7 @@ def _apply_loyalty_points(user, use_points):
     return used_pts
 
 
-def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False):
-    global REGION
-    REGION = region
-    context.begin(user, items, region)
-    oid = store.next_id()
-
+def _run_settlement_pipeline(items, user, coupon, use_points):
     sub = pricing.compute_subtotal(items)
     context.put("total", sub)
 
@@ -86,6 +81,16 @@ def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False)
 
     taxship.apply_tax()
     taxship.apply_shipping()
+    return used_pts
+
+
+def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False):
+    global REGION
+    REGION = region
+    context.begin(user, items, region)
+    oid = store.next_id()
+
+    used_pts = _run_settlement_pipeline(items, user, coupon, use_points)
 
     total = round(context.get("total", 0.0), 2)
     line_items = context.get("line_items", [])
