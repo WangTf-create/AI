@@ -61,6 +61,15 @@ def _should_reject_order(risk_score):
     return risk.rejected(risk_score)
 
 
+def _apply_loyalty_points(user, use_points):
+    used_pts = 0
+    if use_points and config.FLAGS["enable_loyalty"]:
+        used_pts = loyalty.burn(user, use_points)
+        t = context.get("total", 0.0) - used_pts / 100.0
+        context.put("total", max(0.0, t))
+    return used_pts
+
+
 def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False):
     global REGION
     REGION = region
@@ -73,11 +82,7 @@ def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False)
     discounts.apply_vip()
     coupons.apply_coupon(coupon)
 
-    used_pts = 0
-    if use_points and config.FLAGS["enable_loyalty"]:
-        used_pts = loyalty.burn(user, use_points)
-        t = context.get("total", 0.0) - used_pts / 100.0
-        context.put("total", max(0.0, t))
+    used_pts = _apply_loyalty_points(user, use_points)
 
     taxship.apply_tax()
     taxship.apply_shipping()
