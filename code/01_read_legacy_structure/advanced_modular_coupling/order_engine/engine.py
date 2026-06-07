@@ -21,6 +21,46 @@ def reset_all():
     context.CTX.clear()
 
 
+def _build_order_payload(oid, user, region, line_items, total, status, risk_score, include_details):
+    order = {
+        "id": oid,
+        "user": user.get("id"),
+        "region": region,
+        "items": line_items,
+        "total": total,
+        "status": status,
+        "risk": risk_score,
+        "breakdown": context.snapshot(),
+    }
+    if include_details:
+        order["points_earned"] = include_details["points_earned"]
+        order["points_used"] = include_details["points_used"]
+        order["currency"] = include_details["currency"]
+    return order
+
+
+def _reserve_and_pick_status(oid, items, dry_run):
+    status = "confirmed"
+    if not dry_run:
+        reserved = inventory.reserve(oid, items)
+        if not reserved:
+            status = "out_of_stock"
+    return status
+
+
+def _compute_risk_score(total):
+    risk_score = 0
+    if config.FLAGS["enable_risk"]:
+        risk_score = risk.score(total)
+    return risk_score
+
+
+def _should_reject_order(risk_score):
+    if not config.FLAGS["enable_risk"]:
+        return False
+    return risk.rejected(risk_score)
+
+
 def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False):
     global REGION
     REGION = region
@@ -45,21 +85,21 @@ def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False)
     total = round(context.get("total", 0.0), 2)
     line_items = context.get("line_items", [])
 
-    s = 0
-    if config.FLAGS["enable_risk"]:
-        s = risk.score(total)
+    s = _compute_risk_score(total)
 
-    status = "confirmed"
-    reserved = False
-    if not dry_run:
-        reserved = inventory.reserve(oid, items)
-        if not reserved:
-            status = "out_of_stock"
+    status = _reserve_and_pick_status(oid, items, dry_run)
 
-    if config.FLAGS["enable_risk"] and risk.rejected(s):
-        order = {"id": oid, "user": user.get("id"), "region": region,
-                 "items": line_items, "total": total, "status": "rejected",
-                 "risk": s, "breakdown": context.snapshot()}
+    if _should_reject_order(s):
+        order = _build_order_payload(
+            oid,
+            user,
+            region,
+            line_items,
+            total,
+            "rejected",
+            s,
+            include_details=None,
+        )
         if not dry_run:
             store.save(order)
         store.emit("order_rejected", {"order_id": oid, "risk": s})
@@ -69,11 +109,20 @@ def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False)
     if config.FLAGS["enable_loyalty"] and status == "confirmed" and not dry_run:
         earned = loyalty.earn(user, items)
 
-    order = {"id": oid, "user": user.get("id"), "region": region,
-             "items": line_items, "total": total, "status": status,
-             "risk": s, "points_earned": earned, "points_used": used_pts,
-             "currency": config.CURRENCY.get(region, "CNY"),
-             "breakdown": context.snapshot()}
+    order = _build_order_payload(
+        oid,
+        user,
+        region,
+        line_items,
+        total,
+        status,
+        s,
+        include_details={
+            "points_earned": earned,
+            "points_used": used_pts,
+            "currency": config.CURRENCY.get(region, "CNY"),
+        },
+    )
 
     if not dry_run and status == "confirmed":
         store.save(order)
