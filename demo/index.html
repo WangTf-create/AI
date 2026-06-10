@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>花旗银行</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(160deg, #001a4d 0%, #003087 45%, #005eb8 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部导航 */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    /* 花旗标志性弧线 */
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      position: relative;
+    }
+
+    .logo-icon::before {
+      content: "";
+      position: absolute;
+      width: 36px;
+      height: 18px;
+      border: 3px solid #e4002b;
+      border-bottom: none;
+      border-radius: 36px 36px 0 0;
+      top: 4px;
+      left: 0;
+    }
+
+    nav a {
+      color: rgba(255, 255, 255, 0.85);
+      text-decoration: none;
+      margin-left: 32px;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: #fff;
+    }
+
+    /* 主视觉区 */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 48px;
+    }
+
+    .hero {
+      text-align: center;
+      max-width: 720px;
+    }
+
+    .hero h1 {
+      font-size: 3.2rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      letter-spacing: 0.08em;
+    }
+
+    .hero .tagline {
+      font-size: 1.6rem;
+      font-weight: 300;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.92);
+      margin-bottom: 48px;
+    }
+
+    .hero .tagline em {
+      font-style: normal;
+      color: #ffd700;
+      font-weight: 500;
+    }
+
+    /* 翅膀装饰 */
+    .wings {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+
+    .wing {
+      width: 80px;
+      height: 40px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-bottom: none;
+      border-radius: 80px 80px 0 0;
+    }
+
+    .wing-left {
+      transform: rotate(-25deg);
+      margin-right: -8px;
+    }
+
+    .wing-right {
+      transform: rotate(25deg) scaleX(-1);
+      margin-left: -8px;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 14px 36px;
+      border-radius: 4px;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-primary {
+      background: #e4002b;
+      color: #fff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #c40024;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    /* 服务简介 */
+    .services {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 900px;
+      margin: 60px auto 0;
+      padding: 0 48px 60px;
+    }
+
+    .service-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 28px 24px;
+      text-align: center;
+    }
+
+    .service-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      color: #ffd700;
+    }
+
+    .service-card p {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.45);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px 24px;
+      }
+
+      nav a {
+        margin: 0 12px;
+      }
+
+      .hero h1 {
+        font-size: 2.2rem;
+      }
+
+      .hero .tagline {
+        font-size: 1.2rem;
+      }
+
+      .services {
+        grid-template-columns: 1fr;
+        padding: 0 24px 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="logo-icon" aria-hidden="true"></div>
+      <span>花旗银行</span>
+    </div>
+    <nav>
+      <a href="#">个人银行</a>
+      <a href="#">企业金融</a>
+      <a href="#">投资理财</a>
+      <a href="#">关于我们</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="wings" aria-hidden="true">
+        <div class="wing wing-left"></div>
+        <div class="wing wing-right"></div>
+      </div>
+      <h1>花旗银行</h1>
+      <p class="tagline">普通人攒钱，高手<em>让钱自己去飞</em></p>
+      <div class="cta-group">
+        <a href="https://www.google.com/" class="btn btn-primary" target="_blank" rel="noopener noreferrer">立即开户</a>
+        <a href="#" class="btn btn-outline">了解更多</a>
+      </div>
+    </div>
+  </main>
+
+  <section class="services">
+    <div class="service-card">
+      <h3>全球视野</h3>
+      <p>覆盖 160 多个国家和地区的金融服务网络，助您把握世界机遇。</p>
+    </div>
+    <div class="service-card">
+      <h3>财富管理</h3>
+      <p>专业顾问团队，为您量身定制资产配置方案，让财富稳健增值。</p>
+    </div>
+    <div class="service-card">
+      <h3>科技创新</h3>
+      <p>数字化银行体验，安全便捷的移动金融服务，随时随地掌控财务。</p>
+    </div>
+  </section>
+
+  <footer>
+    &copy; 2026 花旗银行 版权所有
+  </footer>
+</body>
+</html>
