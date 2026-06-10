@@ -5,7 +5,35 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "build": "electron-builder --publish never",
     "test": "echo \"No test script configured\""
+  },
+  "build": {
+    "appId": "com.citibank.demo",
+    "productName": "CitibankDemo",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    }
   },
   "repository": {
     "type": "git",
@@ -20,6 +48,7 @@
   },
   "homepage": "https://github.com/WangTf-create/AI#readme",
   "devDependencies": {
-    "electron": "^42.4.0"
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.2"
   }
 }

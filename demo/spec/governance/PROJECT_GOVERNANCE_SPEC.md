@@ -1,7 +1,7 @@
 # 项目治理 SPEC（governance）
 
 - **状态**：governance（持续生效）
-- **更新于**：2026-06-10（Electron 客户端）
+- **更新于**：2026-06-10（Electron 客户端 + 自动打包 workflow）
 
 ## 范围
 
@@ -13,6 +13,17 @@
 - 页面层保持纯 HTML + 内联 CSS；桌面壳使用 Electron（Node.js + Electron 依赖）。
 - 支持两种预览方式：浏览器直接打开 `index.html`，或执行 `npm run start` 启动 Electron 客户端。
 - 响应式：至少支持桌面（>768px）与移动端（<=768px）两种布局（见首页 media query）。
+- GitHub Actions 自动打包：仅当 `main` 出现新提交且 `demo/package.json` 版本号发生变化时，触发 Windows/macOS/Linux 三平台打包。
+
+## 自动打包规则（GitHub Workflow）
+
+- Workflow 文件：根目录 `.github/workflows/demo-electron-package.yml`
+- 触发条件：
+  - 分支：`main`
+  - 变更路径包含 `demo/package.json` 或 `demo/` 相关文件
+  - 且 `demo/package.json` 的 `version` 相比上一个提交发生变化
+- 打包命令：`npm run build`（基于 `electron-builder`）
+- 产物：以 GitHub Artifact 形式输出各平台安装包
 
 ## 改动流程
 
@@ -25,5 +36,6 @@
 
 - [ ] `index.html` 在 Chrome / Edge 最新版可直接打开，无控制台报错（本页无 JS，标准为无 broken 资源）
 - [ ] `npm run start` 可启动 Electron 客户端并加载首页
+- [ ] 当 `main` 合并版本升级提交后，GitHub Actions 触发三平台打包并上传产物
 - [ ] 中文文案无乱码，`<meta charset="UTF-8">` 存在
 - [ ] 改动与 spec 描述一致，README 清单已更新

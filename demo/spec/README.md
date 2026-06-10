@@ -1,6 +1,6 @@
 # Demo Spec 索引
 
-> Updated: 2026-06-10（Git 治理 + Electron 客户端）
+> Updated: 2026-06-10（Git 治理 + Electron 客户端 + 自动打包 workflow）
 
 ## 用途
 
@@ -42,3 +42,4 @@ spec/
 
 - 浏览器预览：直接打开 `index.html`
 - 桌面客户端：在 `demo/` 执行 `npm install` 后运行 `npm run start`
+- 多平台打包：在 `demo/` 执行 `npm run build`（CI 在 `main` 且版本号变化时自动触发）
