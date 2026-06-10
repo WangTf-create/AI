@@ -61,26 +61,36 @@ def _should_reject_order(risk_score):
     return risk.rejected(risk_score)
 
 
-def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False):
-    global REGION
-    REGION = region
-    context.begin(user, items, region)
-    oid = store.next_id()
+def _apply_loyalty_points(user, use_points):
+    used_pts = 0
+    if use_points and config.FLAGS["enable_loyalty"]:
+        used_pts = loyalty.burn(user, use_points)
+        t = context.get("total", 0.0) - used_pts / 100.0
+        context.put("total", max(0.0, t))
+    return used_pts
 
+
+def _run_settlement_pipeline(items, user, coupon, use_points):
     sub = pricing.compute_subtotal(items)
     context.put("total", sub)
 
     discounts.apply_vip()
     coupons.apply_coupon(coupon)
 
-    used_pts = 0
-    if use_points and config.FLAGS["enable_loyalty"]:
-        used_pts = loyalty.burn(user, use_points)
-        t = context.get("total", 0.0) - used_pts / 100.0
-        context.put("total", max(0.0, t))
+    used_pts = _apply_loyalty_points(user, use_points)
 
     taxship.apply_tax()
     taxship.apply_shipping()
+    return used_pts
+
+
+def checkout(items, user, coupon=None, region="cn", use_points=0, dry_run=False):
+    global REGION
+    REGION = region
+    context.begin(user, items, region)
+    oid = store.next_id()
+
+    used_pts = _run_settlement_pipeline(items, user, coupon, use_points)
 
     total = round(context.get("total", 0.0), 2)
     line_items = context.get("line_items", [])
